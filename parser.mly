@@ -6,13 +6,12 @@
 
 %} /* declarations */
 
-/* lexer tokens */
-%token EOL SEMICOLON COLON ASSIGN MINUS
+%token EOL SEMICOLON COLON ASSIGN MINUS /* lexer tokens */
 %token VAR NULL PROC DOT
 %token TRUE FALSE LESS EQUAL
-%token VARIABLE
-%token FIELD
-%token NUMBER
+%token <string> VARIABLE
+%token <string> FIELD
+%token <int> NUMBER
 %token LPAREN RPAREN
 %token MALLOC SKIP LBRACE RBRACE
 %token WHILE IF ELSE PARALLEL ATOM
@@ -27,6 +26,8 @@
 %type <unit> cmds
 %type <unit> expr
 %type <unit> bool
+
+%%
 
 main:
   cmds EOL { () }
@@ -45,7 +46,7 @@ cmd:
   | LBRACE cmds RBRACE { () }
   | WHILE bool cmd { () }
   | IF bool cmd ELSE cmd { () }
-  | LBRACE cmd PARALLELPIPE cmd RBRACE { () }
+  | LBRACE cmd PARALLEL cmd RBRACE { () }
   | ATOM LPAREN cmd RPAREN { () }
 
 expr:
@@ -55,7 +56,7 @@ expr:
   | NULL { () }
   | VARIABLE { () }
   | expr DOT expr { () }
-  | PROC VARIABLE COLON command { () }
+  | PROC VARIABLE COLON cmd { () }
 
 bool:
   TRUE { () }

@@ -6,9 +6,12 @@ exception Eof
 
 rule token = parse
     [' ' '\t' '\n'] { token lexbuf } (* skip blanks and tabs *)
-  | ['A'-'Z'](['a'-'z'] | ['A'-'Z'] | ['0'-'9'])* as var { VARIABLE var }
-  | ['a'-'z'](['a'-'z'] | ['A'-'Z'] | ['0'-'9'])* as field { FIELD field }
-  | ['0'-'9']+ as num { NUMBER (int_of_string num) }
+  | ['A'-'Z'](['a'-'z'] | ['A'-'Z'] | ['0'-'9'])* as var
+    { VARIABLE var }
+  | ['a'-'z'](['a'-'z'] | ['A'-'Z'] | ['0'-'9'])* as field
+    { FIELD field }
+  | ['0'-'9']+ as num
+    { NUMBER (int_of_string num) }
   | ['\n' ]    { EOL }
   | ';'        { SEMICOLON }
   | ':'        { COLON }
@@ -29,7 +32,7 @@ rule token = parse
   | '}'        { RBRACE }
   | "true"     { TRUE }
   | "false"    { FALSE }
-  | "|||"      { PARALLELPIPE }
+  | "|||"      { PARALLEL }
   | "atom"     { ATOM }
   | "null"     { NULL }
   | eof        { raise Eof }
