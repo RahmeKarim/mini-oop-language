@@ -12,12 +12,6 @@ let error_msg lexbuf msg =
 
 rule token = parse
     [' ' '\t' '\n'] { token lexbuf } (* skip blanks and tabs *)
-  | ['A'-'Z'](['a'-'z'] | ['A'-'Z'] | ['0'-'9'])* as var
-    { VARIABLE var }
-  | ['a'-'z'](['a'-'z'] | ['A'-'Z'] | ['0'-'9'])* as field
-    { FIELD field }
-  | ['0'-'9']+ as num
-    { NUMBER (int_of_string num) }
   | ['\n' ]    { EOL }
   | ';'        { SEMICOLON }
   | ':'        { COLON }
@@ -41,5 +35,11 @@ rule token = parse
   | "|||"      { PARALLEL }
   | "atom"     { ATOM }
   | "null"     { NULL }
+  | ['A'-'Z'](['a'-'z'] | ['A'-'Z'] | ['0'-'9'])* as var
+    { VARIABLE var }
+  | ['a'-'z'](['a'-'z'] | ['A'-'Z'] | ['0'-'9'])* as field
+    { FIELD field }
+  | ['0'-'9']+ as num
+    { NUMBER (int_of_string num) }
   | eof        { raise Eof }
   | _ as char  { raise (Error (error_msg lexbuf (Printf.sprintf "Unexpected character: '%c'" char))) }
