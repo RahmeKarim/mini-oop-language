@@ -1,12 +1,14 @@
-# Define the compiler to use
+# Define the compiler
 OCAMLC=ocamlc
 OCAMLLEX=ocamllex
 MENHIR=menhir
+OCAMLFIND=ocamlfind
 
 # Define the source files
 LEXER_SRC=lexer.mll
 PARSER_SRC=parser.mly
 MAIN_SRC=main.ml
+TEST_SRC=./tests/test_parser.ml  # Name of test suite file
 
 # Define the generated files
 LEXER_GEN=lexer.ml
@@ -15,9 +17,10 @@ PARSER_GEN_INTF=parser.mli
 
 # Define the executable name
 EXEC=mini_oop
+TEST_EXEC=test_parser.native  # Name of the test suite executable
 
 # Phony targets are not files
-.PHONY: all clean
+.PHONY: all clean test
 
 # Default target
 all: $(EXEC)
@@ -34,6 +37,15 @@ $(LEXER_GEN): $(LEXER_SRC) $(PARSER_GEN_INTF)
 $(EXEC): $(LEXER_GEN) $(PARSER_GEN) $(MAIN_SRC)
 	$(OCAMLC) -o $(EXEC) $(PARSER_GEN_INTF) $(PARSER_GEN) $(LEXER_GEN) $(MAIN_SRC)
 
+# Rule to run tests
+test: $(TEST_SRC) $(LEXER_GEN) $(PARSER_GEN)
+	$(OCAMLFIND) ocamlc -o $(TEST_EXEC) -package ounit2 -linkpkg -g $(LEXER_GEN) $(PARSER_GEN) $(PARSER_GEN_INTF) $(TEST_SRC)
+	./$(TEST_EXEC)
+
+# Run executable
+run: $(EXEC)
+	./$(EXEC)
+
 # Clean the build directory
 clean:
-	rm -f *.cmi *.cmo $(LEXER_GEN) $(PARSER_GEN) $(PARSER_GEN_INTF) $(EXEC)
+	rm -f *.cmi *.cmo $(LEXER_GEN) $(PARSER_GEN) $(PARSER_GEN_INTF) $(EXEC) $(TEST_EXEC)
