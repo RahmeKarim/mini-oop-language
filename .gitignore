@@ -1,0 +1,28 @@
+# OCaml compiled object files
+*.cmo
+*.cmi
+*.cma
+*.cmxa
+*.cmt
+*.cmti
+*.cmx
+*.o
+*.a
+
+# OCaml bytecode and native executable
+*.byte
+*.native
+mini_oop
+
+# Menhir generated files
+*.mli
+*.ml
+
+# ocamlbuild working directory
+_build
+
+# Logs
+*.log
+
+# MacOS files
+.DS_Store
