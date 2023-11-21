@@ -1,7 +1,13 @@
 (* File lexer.mll *)
 {
 open Parser  (* Type token defined in parser.mli *)
-exception Eof 
+exception Eof
+exception Error of string
+
+(* Function to create an error message that includes the position in the input *)
+let error_msg lexbuf msg =
+  let pos = lexbuf.Lexing.lex_curr_p in
+  Printf.sprintf "Error at line %d, position %d: %s" pos.Lexing.pos_lnum (pos.Lexing.pos_cnum - pos.Lexing.pos_bol) msg
 }
 
 rule token = parse
@@ -36,3 +42,4 @@ rule token = parse
   | "atom"     { ATOM }
   | "null"     { NULL }
   | eof        { raise Eof }
+  | _ as char  { raise (Error (error_msg lexbuf (Printf.sprintf "Unexpected character: '%c'" char))) }

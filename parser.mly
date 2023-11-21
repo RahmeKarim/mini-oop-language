@@ -1,10 +1,11 @@
 /* File parser.mly */
 
-%{ (* header *)
-  
-(* open Declarations *)
-
-%} /* declarations */
+%{
+  (* Header *)
+  open Parsing
+  let report_error msg =
+    Printf.eprintf "%s\n" msg
+%}
 
 %token EOL SEMICOLON COLON ASSIGN MINUS /* lexer tokens */
 %token VAR NULL PROC DOT
@@ -31,10 +32,12 @@
 
 main:
   cmds EOL { () }
+  | error { report_error "Syntax error at end of input"; () }
 
 cmds :
   cmd SEMICOLON l = cmds   { () }
-  | c = cmd                  { () }
+  | c = cmd                { () }
+  | error { report_error "Syntax error in command sequence"; clear_parser(); () }
 
 cmd:
   VAR VARIABLE { () }
@@ -48,6 +51,7 @@ cmd:
   | IF bool cmd ELSE cmd { () }
   | LBRACE cmd PARALLEL cmd RBRACE { () }
   | ATOM LPAREN cmd RPAREN { () }
+  | error { report_error "Syntax error in command"; clear_parser(); () }
 
 expr:
   FIELD { () }
@@ -57,10 +61,13 @@ expr:
   | VARIABLE { () }
   | expr DOT expr { () }
   | PROC VARIABLE COLON cmd { () }
+  | error { report_error "Syntax error in expression"; clear_parser(); () }
 
 bool:
   TRUE { () }
   | FALSE { () }
   | expr EQUAL expr { () }
   | expr LESS expr { () }
+  | error { report_error "Syntax error in boolean expression"; clear_parser(); () }
+
 %%
