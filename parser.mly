@@ -29,35 +29,37 @@
 %type <unit> bool
 
 main:
-    cmds EOL { () }
+  cmds EOL { () }
 
 cmds :
-    cmd SEMICOLON l = cmds   { () }
-    | c = cmd                  { () }
+  cmd SEMICOLON l = cmds   { () }
+  | c = cmd                  { () }
 
 cmd:
-    VAR VARIABLE { () }
-    | expr LPAREN expr RPAREN { () }
-    | MALLOC LPAREN VARIABLE RPAREN { () }
-    | VARIABLE ASSIGN expr { () }
-    | expr DOT FIELD ASSIGN expr { () }
-    | SKIP { () }
-    | LBRACE cmds RBRACE { () }
-    | WHILE bool cmd { () }
-    | IF bool cmd ELSE cmd { () }
-    | LBRACE cmd PARALLELPIPE cmd RBRACE { () }
-    | ATOM LPAREN cmd RPAREN { () }
+  VAR VARIABLE { () }
+  | expr LPAREN expr RPAREN { () }
+  | MALLOC LPAREN VARIABLE RPAREN { () }
+  | VARIABLE ASSIGN expr { () }
+  | expr DOT FIELD ASSIGN expr { () }
+  | SKIP { () }
+  | LBRACE cmds RBRACE { () }
+  | WHILE bool cmd { () }
+  | IF bool cmd ELSE cmd { () }
+  | LBRACE cmd PARALLELPIPE cmd RBRACE { () }
+  | ATOM LPAREN cmd RPAREN { () }
 
-expr: FIELD { () }
-    | NUMBER { () }
-    | expr MINUS expr { () }
-    | NULL { () }
-    | VARIABLE { () }
-    | expr DOT expr { () }
-    | PROC VARIABLE COLON command { () }
+expr:
+  FIELD { () }
+  | NUMBER { () }
+  | expr MINUS expr { () }
+  | NULL { () }
+  | VARIABLE { () }
+  | expr DOT expr { () }
+  | PROC VARIABLE COLON command { () }
 
-bool: TRUE { () }
-    | FALSE { () }
-    | expr EQUAL expr { () }
-    | expr LESS expr { () }
+bool:
+  TRUE { () }
+  | FALSE { () }
+  | expr EQUAL expr { () }
+  | expr LESS expr { () }
 %%
