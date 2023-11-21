@@ -26,3 +26,9 @@ _build
 
 # MacOS files
 .DS_Store
+
+# do not ignore *.ml in tests folder
+!/tests/*.ml
+
+# oUnit test files
+*.cache
