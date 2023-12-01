@@ -23,7 +23,7 @@ PARSER_GEN_INTF=parser.mli
 EXEC=mini_oop
 TEST_LEXER=test_lexer.native
 TEST_PARSER=test_parser.native
-TEST_PRETTY_PRINTER_EXEC=test_pretty_printer.native
+TEST_PRETTY_PRINTER=test_pretty_printer.native
 
 # Phony targets are not files
 .PHONY: all clean test verbose test_pretty_printer
@@ -70,8 +70,8 @@ test_parser: $(LEXER_GEN:.mll=.cmo) $(PARSER_GEN:.mly=.cmo) $(AST_SRC:.ml=.cmo) 
 
 # Rule to compile and run the pretty printer test
 test_pretty_printer: $(PRETTY_PRINTER_SRC:.ml=.cmo) $(AST_SRC:.ml=.cmo) $(LEXER_GEN:.mll=.cmo) $(PARSER_GEN:.mly=.cmo) $(TEST_PRETTY_PRINTER_SRC)
-	$(OCAMLFIND) ocamlc -o $(TEST_PRETTY_PRINTER_EXEC) -package ounit2 -linkpkg $(AST_SRC:.ml=.cmo) $(PRETTY_PRINTER_SRC:.ml=.cmo) $(LEXER_GEN:.mll=.cmo) $(PARSER_GEN:.mly=.cmo) $(TEST_PRETTY_PRINTER_SRC)
-	./$(TEST_PRETTY_PRINTER_EXEC)
+	$(OCAMLFIND) ocamlc -o $(TEST_PRETTY_PRINTER) -package ounit2 -linkpkg $(AST_SRC:.ml=.cmo) $(PRETTY_PRINTER_SRC:.ml=.cmo) $(LEXER_GEN:.mll=.cmo) $(PARSER_GEN:.mly=.cmo) $(TEST_PRETTY_PRINTER_SRC)
+	./$(TEST_PRETTY_PRINTER)
 
 # Run executable
 run: $(EXEC)
