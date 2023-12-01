@@ -15,8 +15,14 @@
 mini_oop
 
 # Menhir generated files
-*.mli
-*.ml
+lexer.mli
+lexer.cmo
+lexer.ml
+parser.cmi
+parser.cmo
+parser.conflicts
+parser.ml
+parser.mli
 
 # ocamlbuild working directory
 _build
@@ -28,7 +34,9 @@ _build
 .DS_Store
 
 # do not ignore *.ml in tests folder
-!/tests/*.ml
 
 # oUnit test files
 *.cache
+
+# menhir explain
+parser.conflicts
