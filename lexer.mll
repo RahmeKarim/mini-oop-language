@@ -1,6 +1,6 @@
 (* File lexer.mll *)
 {
-open Parser  (* Type token defined in parser.mli *)
+open Parser
 exception Eof
 exception Error of string
 
@@ -11,7 +11,7 @@ let error_msg lexbuf msg =
 }
 
 rule token = parse
-    [' ' '\t' '\n'] { token lexbuf } (* skip blanks and tabs *)
+    [' ' '\t'] { token lexbuf } (* skip blanks and tabs *)
   | ['\n' ]    { EOL }
   | ';'        { SEMICOLON }
   | ':'        { COLON }
@@ -21,6 +21,7 @@ rule token = parse
   | '<'        { LESS }
   | "if"       { IF }
   | "else"     { ELSE }
+  | "then"     { THEN }
   | "var"      { VAR }
   | "malloc"   { MALLOC }
   | "proc"     { PROC }

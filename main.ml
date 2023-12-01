@@ -1,5 +1,8 @@
 (* File main.ml *)
-open Parsing;;
+open Ast
+open Parser
+open Pretty_printer
+open Parsing
 
 (* Function to print the position of an error *)
 let print_error_position lexbuf =
@@ -10,20 +13,26 @@ try
   let lexbuf = Lexing.from_channel stdin in
   while true do
     try
-      Parser.main Lexer.token lexbuf
+      (* Parse input to produce AST *)
+      let parsed_ast = Parser.main Lexer.token lexbuf in
+
+      (* Print the parsed AST *)
+      Printf.printf "Parsed AST:\n%s\n" (string_of_ast parsed_ast);
+      print_newline ();
+
     with
     | Parser.Error ->
       print_error_position lexbuf;
       Printf.eprintf "Syntax error: unexpected token '%s'\n" (Lexing.lexeme lexbuf);
       print_newline ();
-      exit 1  (* Exit or handle the error as needed *)
+      exit 1
     | Failure msg ->
       print_error_position lexbuf;
       Printf.eprintf "Failure: %s\n" msg;
       print_newline ();
-      exit 1  (* Exit or handle the error as needed *)
+      exit 1
   done
 with Lexer.Eof ->
   Printf.eprintf "End of file reached.\n";
-  exit 0  (* Normal exit *)
+  exit 0
 ;;
