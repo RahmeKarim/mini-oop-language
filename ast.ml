@@ -1,11 +1,11 @@
 type expr =
   | Field of string
   | Number of int
-  | Minus of expr * expr
   | Null
+  | Minus of expr * expr
+  | FieldValue of expr * expr
   | Variable of string
   | Proc of string * cmd
-  | FieldValue of expr * expr
 
 and cmd =
   | Var of string

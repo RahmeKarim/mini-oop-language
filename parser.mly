@@ -6,7 +6,7 @@
   open Ast
 
   let report_error msg =
-  Printf.eprintf "%s\n" msg
+    Printf.eprintf "%s\n" msg;;
 %}
 
 %token EOL SEMICOLON COLON ASSIGN MINUS /* lexer tokens */

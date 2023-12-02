@@ -27,7 +27,6 @@ let rec print_expr fmt depth expr =
       fprintf fmt "FieldValue\n";
       print_expr fmt (depth + 1) e1;
       print_expr fmt (depth + 1) e2
-  (* Add more cases as necessary *)
 
 and print_cmd fmt depth cmd =
   indent fmt depth;
@@ -66,7 +65,6 @@ and print_cmd fmt depth cmd =
       fprintf fmt "Call\n";
       print_expr fmt (depth + 1) e1;
       print_expr fmt (depth + 1) e2
-  (* Add more cases as necessary *)
 
 and print_bool_expr fmt depth bexpr =
   indent fmt depth;
@@ -81,7 +79,6 @@ and print_bool_expr fmt depth bexpr =
       fprintf fmt "Less\n";
       print_expr fmt (depth + 1) e1;
       print_expr fmt (depth + 1) e2
-  (* Add more boolean expression cases as necessary *)
 
 and print_cmds fmt cmds =
   List.iter (print_cmd fmt 0) cmds
