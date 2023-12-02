@@ -91,4 +91,4 @@ run: $(EXEC)
 
 # Clean the build directory
 clean:
-	rm -f *.cmi *.cmo $(LEXER_GEN) $(PARSER_GEN) $(PARSER_GEN_INTF) $(EXEC) $(TEST_LEXER) $(TEST_PARSER) $(TEST_PRETTY_PRINTER) $(TEST_STATIC_ANALYZER)
+	rm -f  ./tests/*.cmi ./tests/*.cmo *.cmi *.cmo $(LEXER_GEN) $(PARSER_GEN) $(PARSER_GEN_INTF) $(EXEC) $(TEST_LEXER) $(TEST_PARSER) $(TEST_PRETTY_PRINTER) $(TEST_STATIC_ANALYZER)

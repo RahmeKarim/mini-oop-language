@@ -24,7 +24,6 @@ let rec analyze_expr expr scope =
   | Proc (y, c) ->
     (* Analyze the body of the procedure with 'y' added to the scope *)
     let proc_scope = analyze_cmd c { scope with v = y :: scope.v } in
-    (* The error flag should reflect the body of the procedure *)
     { scope with e = proc_scope.e }
 
 and analyze_bool_expr bool_expr scope =
