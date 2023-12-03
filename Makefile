@@ -9,13 +9,16 @@ LEXER_SRC=lexer.mll
 PARSER_SRC=parser.mly
 AST_SRC=ast.ml
 PRETTY_PRINTER_SRC=pretty_printer.ml
-MAIN_SRC=main.ml
 STATIC_ANALYZER_SRC=static_analyzer.ml
+SEMANTIC_DOMAIN_SRC=semantic_domain.ml
+OPERATIONAL_SEMANTICS_SRC=operational_semantics.ml
+MAIN_SRC=main.ml
 
 TEST_LEXER_SRC=./tests/test_lexer.ml
 TEST_PARSER_SRC=./tests/test_parser.ml
 TEST_PRETTY_PRINTER_SRC=./tests/test_pretty_printer.ml
 TEST_STATIC_ANALYZER_SRC=./tests/test_static_analyzer.ml
+TEST_OPERATIONAL_SEMANTICS_SRC=./tests/test_operational_semantics.ml
 
 # Define the generated files
 LEXER_GEN=lexer.ml
@@ -28,6 +31,7 @@ TEST_LEXER=test_lexer.native
 TEST_PARSER=test_parser.native
 TEST_PRETTY_PRINTER=test_pretty_printer.native
 TEST_STATIC_ANALYZER=test_static_analyzer.native
+TEST_OPERATIONAL_SEMANTICS=test_operational_semantics.native
 
 # Phony targets are not files
 .PHONY: all clean test verbose test_pretty_printer
@@ -43,6 +47,10 @@ $(STATIC_ANALYZER_SRC:.ml=.cmo): $(STATIC_ANALYZER_SRC)
 $(AST_SRC:.ml=.cmo): $(AST_SRC)
 	$(OCAMLC) -c $(AST_SRC)
 
+# Rule to compile Semantic Domain
+$(SEMANTIC_DOMAIN_SRC:.ml=.cmo): $(SEMANTIC_DOMAIN_SRC)
+	$(OCAMLC) -c $(SEMANTIC_DOMAIN_SRC)
+
 # Rule to compile Pretty Printer
 $(PRETTY_PRINTER_SRC:.ml=.cmo): $(PRETTY_PRINTER_SRC)
 	$(OCAMLC) -c $(PRETTY_PRINTER_SRC)
@@ -51,6 +59,10 @@ $(PRETTY_PRINTER_SRC:.ml=.cmo): $(PRETTY_PRINTER_SRC)
 $(PARSER_GEN) $(PARSER_GEN_INTF): $(PARSER_SRC) $(AST_SRC:.ml=.cmo)
 	$(MENHIR) --infer $(PARSER_SRC)
 	$(OCAMLC) -c $(PARSER_GEN_INTF) $(PARSER_GEN)
+
+# Rule to compile Operational Semantics
+$(OPERATIONAL_SEMANTICS_SRC:.ml=.cmo): $(OPERATIONAL_SEMANTICS_SRC) $(AST_SRC:.ml=.cmo) $(PARSER_GEN)
+	$(OCAMLC) -c $(OPERATIONAL_SEMANTICS_SRC)
 
 # Rule to make the lexer, depends on parser interface
 $(LEXER_GEN): $(LEXER_SRC) $(PARSER_GEN_INTF)
@@ -85,10 +97,15 @@ test_static_analyzer: $(PRETTY_PRINTER_SRC:.ml=.cmo) $(STATIC_ANALYZER_SRC:.ml=.
 	$(OCAMLFIND) ocamlc -o $(TEST_STATIC_ANALYZER) -package ounit2 -linkpkg $(AST_SRC:.ml=.cmo) $(PRETTY_PRINTER_SRC:.ml=.cmo) $(STATIC_ANALYZER_SRC:.ml=.cmo) $(LEXER_GEN:.mll=.cmo) $(PARSER_GEN:.mly=.cmo) $(TEST_STATIC_ANALYZER_SRC)
 	./$(TEST_STATIC_ANALYZER)
 
+# Rule to compile and run the operational semantics test
+test_operational_semantics: $(PRETTY_PRINTER_SRC:.ml=.cmo) $(STATIC_ANALYZER_SRC:.ml=.cmo) $(SEMANTIC_DOMAIN_SRC:.ml=.cmo) $(OPERATIONAL_SEMANTICS_SRC:.ml=.cmo) $(AST_SRC:.ml=.cmo) $(LEXER_GEN:.mll=.cmo) $(PARSER_GEN:.mly=.cmo) $(TEST_OPERATIONAL_SEMANTICS_SRC)
+	$(OCAMLFIND) ocamlc -o $(TEST_OPERATIONAL_SEMANTICS) -package ounit2 -linkpkg $(PRETTY_PRINTER_SRC:.ml=.cmo) $(STATIC_ANALYZER_SRC:.ml=.cmo) $(SEMANTIC_DOMAIN_SRC:.ml=.cmo) $(OPERATIONAL_SEMANTICS_SRC:.ml=.cmo) $(AST_SRC:.ml=.cmo) $(LEXER_GEN:.mll=.cmo) $(PARSER_GEN:.mly=.cmo) $(TEST_OPERATIONAL_SEMANTICS_SRC)
+	./$(TEST_OPERATIONAL_SEMANTICS)
+
 # Run executable
 run: $(EXEC)
 	./$(EXEC)
 
 # Clean the build directory
 clean:
-	rm -f  ./tests/*.cmi ./tests/*.cmo *.cmi *.cmo $(LEXER_GEN) $(PARSER_GEN) $(PARSER_GEN_INTF) $(EXEC) $(TEST_LEXER) $(TEST_PARSER) $(TEST_PRETTY_PRINTER) $(TEST_STATIC_ANALYZER)
+	rm -f  ./tests/*.cmi ./tests/*.cmo *.cmi *.cmo $(LEXER_GEN) $(PARSER_GEN) $(PARSER_GEN_INTF) $(EXEC) $(TEST_LEXER) $(TEST_PARSER) $(TEST_PRETTY_PRINTER) $(TEST_STATIC_ANALYZER) $(TEST_OPERATIONAL_SEMANTICS)

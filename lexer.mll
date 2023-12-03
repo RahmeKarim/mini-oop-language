@@ -26,6 +26,7 @@ rule token = parse
   | "malloc"   { MALLOC }
   | "proc"     { PROC }
   | "while"    { WHILE }
+  | "skip"     { SKIP }
   | '-'        { MINUS }
   | '('        { LPAREN }
   | ')'        { RPAREN }

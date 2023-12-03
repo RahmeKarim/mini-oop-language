@@ -1,39 +1,43 @@
-(* File: semantic_domains.ml *)
+open Ast
 
 type int_val = int
 
-type bool_val =True | False | Error
+and bool_val = True | False | Error
 
-type object_val = Object of int
+and object_val = Object of int
 
-type location = object_val | Null
+and location = ObjectLoc of object_val | Null
 
-type stack = frame list
+and environment = (string * location) list
 
-and closure = Closure of string * command * stack
+and frame = 
+  | Decl of environment
+  | Call of environment * stack
+
+and stack = frame list
+
+and closure = Closure of string * cmd * stack
 
 and value = 
   | Field of string
   | Int of int_val
   | Loc of location
   | Clo of closure
+  | Null  (* Otherwise we always need to use (Loc Null) *)
 
 and tainted_value = 
   | Val of value
   | Error
 
-type environment = (string * object_val) list
+and heap = (location * string, tainted_value) Hashtbl.t
 
-and frame = 
-  | Decl of environment
-  | Call of environment * stack
+and state = {
+  stack: stack;
+  heap: heap;
+}
 
-type heap = (object_val * string, tainted_value) Hashtbl.t
-
-type state = stack * heap
-
-type control =
-  | VarCmd of string * control
+and control =
+  | VarCmd of string
   | ExprCmd of expr
   | MallocCmd of string
   | AssignCmd of string * expr
@@ -41,11 +45,13 @@ type control =
   | BlockCmd of control list
   | WhileCmd of bool_expr * control
   | IfThenElseCmd of bool_expr * control * control
+  | FieldAssignExpressionCmd of expr * expr * expr
   | ParallelCmd of control * control
   | AtomCmd of control
   | PopBlock of control
+  | CallCmd of expr * expr
 
-type configuration =
+and configuration =
   | CtrlState of control * state
   | State of state
   | Error

@@ -10,7 +10,7 @@
 %}
 
 %token EOL SEMICOLON COLON ASSIGN MINUS /* lexer tokens */
-%token VAR NULL PROC DOT
+%token VAR NULL PROC DOT EOF
 %token TRUE FALSE LESS EQUAL
 %token <string> VARIABLE
 %token <string> FIELD
