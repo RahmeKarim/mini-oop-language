@@ -46,7 +46,7 @@ cmd:
   | SKIP                                      { Skip }
   | LBRACE cs = cmds RBRACE                   { Block cs }
   | WHILE b = bool c = cmd                    { While (b, c) }
-  | IF b = bool THEN c1 = cmd ELSE c2 = cmd        { IfThenElse (b, c1, c2) }
+  | IF b = bool THEN c1 = cmd ELSE c2 = cmd   { IfThenElse (b, c1, c2) }
   | LBRACE c1 = cmd PARALLEL c2 = cmd RBRACE  { Parallel (c1, c2) }
   | ATOM LPAREN c = cmd RPAREN                { Atom c }
 
