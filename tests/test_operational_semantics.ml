@@ -154,19 +154,19 @@ let expected_state_for_procedure_call = {
     Hashtbl.add h (ObjectLoc (Object 0), "val") (Val (Int (18)));
 
     (* Add closure for P at Object 1 *)
-    let closure_body = Assign ("X", Minus (Variable "21", Variable "Y")) in
+    let closure_body = Assign ("X", Minus (Variable "Y", Number 3)) in
     let closure_env = [
       Decl [("P", ObjectLoc (Object 1))];
       Decl [("X", ObjectLoc (Object 0))]
     ] in
     Hashtbl.add h (ObjectLoc (Object 1), "val") (Val (Clo (Closure ("Y", closure_body, closure_env))));
+    Hashtbl.add h (ObjectLoc (Object 2), "val") (Val (Int (21)));
 
     h
 }
 
 (* Define test cases *)
 let test_cases = [
-  (*
   "test_var_declaration" >:: (fun _ ->
     test_operational_behavior "var X\n" expected_state_for_var_declaration
   );
@@ -174,6 +174,7 @@ let test_cases = [
   "test_var_assignment" >:: (fun _ ->
     test_operational_behavior "var X; X = 5\n" expected_state_for_var_assignment
   );
+
   "test_minus" >:: (fun _ ->
     test_operational_behavior "var X; X = 10 - 7\n" expected_state_for_minus
   );
@@ -207,9 +208,8 @@ let test_cases = [
   "test_skip" >:: (fun _ ->
     test_operational_behavior "var X; X = 3; skip; X = X - 1\n" expected_state_for_skip
   );
-  *)
   "test_procedure_call" >:: (fun _ ->
-    test_operational_behavior "var X; var P; P = proc Y: X = Y - 3; P(21);\n" expected_state_for_skip
+    test_operational_behavior "var X; var P; P = proc Y: X = Y - 3; P(21);\n" expected_state_for_procedure_call
   );
 ]
 

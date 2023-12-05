@@ -178,8 +178,10 @@ let rec find_in_stack x = function
         | Some loc -> Some loc
         | None -> find_in_stack x rest_stack
       end
-    | Call (env, _) ->
-      find_in_environment x env
+    | Call (env, stack') ->
+      match find_in_environment x env with
+      | Some loc -> Some loc
+      | None -> find_in_stack x rest_stack
 
 (* Function to evaluate expressions *)
 let rec eval_expr expr (state: state) : tainted_value * state =
@@ -247,6 +249,24 @@ let rec eval_bool_expr bool_expr (state: state) : bool_val =
       | _ -> Error
     end
 
+(*
+| AssignCmd (x, e) ->
+  let (value, state') = eval_expr e state in
+  begin match value with
+  | Val v ->
+    begin match find_in_stack x state.stack with
+    | Some loc -> 
+      begin match Hashtbl.find_opt state.heap (loc, "val") with
+        | Some value ->
+          let heap' = update_heap state'.heap loc "val" value in
+          { state' with heap = heap' }
+        | None ->  raise (RuntimeError "Error in finding variable in assignment")
+      end
+    end
+  | Error -> raise (RuntimeError "Error during assignment")
+  end
+*)
+
 (* Function to evaluate command *)
 let rec eval_cmd cmd (state: state) : state =
   Printf.printf "\n\nEvaluating command: %s" (string_of_command cmd);
@@ -260,14 +280,14 @@ let rec eval_cmd cmd (state: state) : state =
     | AssignCmd (x, e) ->
       let (value, state') = eval_expr e state in
       begin match value with
-      | Val v ->
-        let loc = match state'.stack with
-                  | Decl env :: _ -> List.assoc x env
-                  | Call (env, stack) :: _ -> List.assoc x env
-                  | _ -> raise (RuntimeError "Variable not declared") in
-        let heap' = update_heap state'.heap loc "val" value in
-        { state' with heap = heap' }
-      | Error -> raise (RuntimeError "Error during assignment")
+        | Val v ->
+          begin match find_in_stack x state'.stack with
+          | Some loc -> 
+            let heap' = update_heap state'.heap loc "val" (Val v) in
+            { state' with heap = heap' }
+          | None -> raise (RuntimeError ("Variable not declared: " ^ x))
+          end
+        | Error -> raise (RuntimeError "Error during assignment")
       end
     | MallocCmd x ->
       let obj_loc = new_location() in
@@ -317,15 +337,20 @@ let rec eval_cmd cmd (state: state) : state =
     | SkipCmd -> state
     | CallCmd (e1, e2) ->
       let (v, state') = eval_expr e1 state in
-      begin match (v) with
-        | Val( Clo( Closure (x, body, closure_stack))) ->
+      begin match v with
+        | Val(Clo(Closure (x, body, closure_stack))) ->
+          let (value, state'') = eval_expr e2 state' in
           let loc = new_location () in
+          let heap' = update_heap state''.heap loc "val" value in
           let env = [(x, loc)] in 
           let stack' = Semantic_domain.Call (env, state.stack) :: closure_stack in
-          let (value, _) = eval_expr e2 state in
-          let heap' = update_heap state.heap loc "val" value in
-          eval_cmd (PopBlock(convert_cmd_to_control body)) { stack = stack'; heap = heap' }
+          let state_with_new_frame = { stack = stack'; heap = heap' } in
+          let state_after_body = eval_cmd (convert_cmd_to_control body) state_with_new_frame in
+          let state_restored = { state_after_body with stack = state.stack } in
+            state_restored
+        | _ -> raise (RuntimeError "Called expression did not evaluate to a closure")
       end
+    
     | PopBlock cmd ->
       let state' = eval_cmd cmd state in
       begin match state'.stack with
