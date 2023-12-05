@@ -18,6 +18,10 @@ let rec print_expr fmt depth expr =
       fprintf fmt "Minus\n";
       print_expr fmt (depth + 1) e1;
       print_expr fmt (depth + 1) e2
+  | Plus (e1, e2) ->
+      fprintf fmt "Plus\n";
+      print_expr fmt (depth + 1) e1;
+      print_expr fmt (depth + 1) e2
   | Null -> fprintf fmt "Null\n"
   | Variable v -> fprintf fmt "Variable %s\n" v
   | Proc (v, c) ->

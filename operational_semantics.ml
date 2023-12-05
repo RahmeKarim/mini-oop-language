@@ -36,7 +36,21 @@ let rec string_of_command cmd =
   | VarCmd x -> "VarCmd " ^ x
   | AssignCmd (x, e) -> "AssignCmd (" ^ x ^ ", " ^ string_of_expr e ^ ")"
   | BlockCmd cmds -> "BlockCmd [" ^ String.concat ", " (List.map string_of_command cmds) ^ "]"
+  | MallocCmd x -> "MallocCmd (" ^ x ^ ")"
+  | FieldAssignExpressionCmd (e1, e2, e3) -> "FieldAssignExpressionCmd (" ^ string_of_expr e1 ^ ", " ^ string_of_expr e2 ^ ", " ^ string_of_expr e3 ^ ")"
+  | WhileCmd (cond, cmd) -> "WhileCmd (" ^ string_of_bool_expr cond ^ ", " ^ string_of_command cmd ^ ")"
+  | IfThenElseCmd (cond, cmd1, cmd2) -> "IfThenElseCmd (" ^ string_of_bool_expr cond ^ ", " ^ string_of_command cmd1 ^ ", " ^ string_of_command cmd2 ^ ")"
+  | SkipCmd -> "SkipCmd"
+  | CallCmd (e1, e2) -> "CallCmd (" ^ string_of_expr e1 ^ ", " ^ string_of_expr e2 ^ ")"
+  | PopBlock cmd -> "PopBlock (" ^ string_of_command cmd ^ ")"
   | _ -> raise (RuntimeError "Unimplemented")
+
+and string_of_bool_expr (bool_expr: Ast.bool_expr) : string =
+  match bool_expr with
+  | True -> "True"
+  | False -> "False"
+  | Equal(e1, e2) -> "Equal (" ^ string_of_expr e1 ^ ", " ^ string_of_expr e2 ^ ")"
+  | Less(e1, e2) -> "Less (" ^ string_of_expr e1 ^ ", " ^ string_of_expr e2 ^ ")"
   
 and string_of_expr (expr: Ast.expr) : string =
   match expr with
@@ -44,6 +58,7 @@ and string_of_expr (expr: Ast.expr) : string =
   | Number n -> "Number " ^ string_of_int n
   | Null -> "Null"
   | Minus (e1, e2) -> "Minus (" ^ string_of_expr e1 ^ ", " ^ string_of_expr e2 ^ ")"
+  | Plus (e1, e2) -> "Plus (" ^ string_of_expr e1 ^ ", " ^ string_of_expr e2 ^ ")"
   | FieldValue (e1, e2) -> "FieldValue (" ^ string_of_expr e1 ^ ", " ^ string_of_expr e2 ^ ")"
   | Variable x -> "Variable " ^ x
   | Proc (param, body) -> "Proc (" ^ param ^ ", " ^ string_of_command (convert_cmd_to_control body) ^ ")"
@@ -75,7 +90,7 @@ and string_of_environment env =
 and string_of_frame frame =
   match frame with
   | Decl env -> "Decl { " ^ string_of_environment env ^ "}"
-  | Call (env, _) -> "Call { " ^ string_of_environment env ^ "}"
+  | Call (env, stack) -> "Call { " ^ string_of_environment env ^ "+ stack: " ^ string_of_stack stack ^ "}"
 
 and string_of_stack stack =
   "[" ^ 
@@ -87,6 +102,47 @@ and string_of_state state =
   "Heap: " ^ string_of_heap state.heap
   
 (* Actual Operational Semantics *)
+
+let collected_fields = ref []
+
+let rec collect_fields_expr expr =
+  match expr with
+  | Field f -> collected_fields := f :: !collected_fields
+  | FieldValue (e, Field f) -> 
+    collected_fields := f :: !collected_fields;
+    collect_fields_expr e
+  | Minus (e1, e2) | FieldValue (e1, e2) ->
+    collect_fields_expr e1;
+    collect_fields_expr e2
+  | Plus (e1, e2) | FieldValue (e1, e2) ->
+    collect_fields_expr e1;
+    collect_fields_expr e2
+  | Null | Number _ | Variable _ -> ()
+  | Proc (_, body) -> 
+    collect_fields_cmd [body]
+
+and collect_fields_cmd cmds =
+  match cmds with
+  | [] -> ()
+  | cmd :: restCmds ->
+    begin
+      match cmd with
+      | Assign (_, e) -> collect_fields_expr e
+      | FieldAssignExpression (e1, Field f, e3) -> 
+        collected_fields := f :: !collected_fields;
+        collect_fields_expr e1;
+        collect_fields_expr e3;
+      | Block nested_cmds -> collect_fields_cmd nested_cmds
+      | _ -> ()
+    end;
+    collect_fields_cmd restCmds
+    
+let reset_collected_fields () =
+  collected_fields := []
+
+let print_collected_fields () =
+  Printf.printf "Collected fields:\n";
+  List.iter (fun field -> Printf.printf "%s\n" field) !collected_fields
 
 (* Helper function to generate a unique location for the heap *)
 let location_counter = ref 0
@@ -104,11 +160,41 @@ let update_heap heap loc field value =
   Hashtbl.replace heap (loc, field) value;
   heap
 
+(* Helper function to search for a variable in an environment *)
+let rec find_in_environment x = function
+  | [] -> None
+  | (var, loc) :: rest ->
+    if var = x then Some loc
+    else find_in_environment x rest
+
+(* Helper function to search for a variable in the stack *)
+let rec find_in_stack x = function
+  | [] -> None
+  | frame :: rest_stack ->
+    match frame with
+    | Decl env ->
+      begin
+        match find_in_environment x env with
+        | Some loc -> Some loc
+        | None -> find_in_stack x rest_stack
+      end
+    | Call (env, _) ->
+      find_in_environment x env
+
 (* Function to evaluate expressions *)
 let rec eval_expr expr (state: state) : tainted_value * state =
   match expr with
   | Field  f    -> (Val (Field f), state)
   | Number n    -> (Val (Int n), state)
+  | Variable x ->
+    begin match find_in_stack x state.stack with
+    | Some loc -> 
+      begin match Hashtbl.find_opt state.heap (loc, "val") with
+      | Some value -> (value, state)
+      | None -> (Error, state)
+      end
+    | None -> (Error, state)
+    end
   | Null        -> (Val (Loc Null), state)
   | Proc (s, c) -> (Val (Clo (Closure (s, c, state.stack))), state)
   | Minus (e1, e2) -> 
@@ -119,8 +205,49 @@ let rec eval_expr expr (state: state) : tainted_value * state =
       | (Val (Int n1), Val (Int n2)) -> (Val (Int (n1 - n2)), state2)
       | _ -> raise (RuntimeError "Illegal subtraction")
     end
+  | Plus (e1, e2) -> 
+    let (v1, state1) = eval_expr e1 state in
+    let (v2, state2) = eval_expr e2 state1 in
+    begin
+      match (v1, v2) with
+      | (Val (Int n1), Val (Int n2)) -> (Val (Int (n1 + n2)), state2)
+      | _ -> raise (RuntimeError "Illegal subtraction")
+    end
+  | FieldValue (e1, e2) ->
+    let (loc_tv, state') = eval_expr e1 state in
+    let (field_tv, state'') = eval_expr e2 state' in
+    begin
+      match (loc_tv, field_tv) with
+      | (Val (Loc loc), Val (Field field)) ->
+        begin match Hashtbl.find_opt state''.heap (loc, field) with
+          | Some value -> (value, state'')
+          | None -> (Error, state'')
+        end
+      end
   | _ -> raise (RuntimeError "Unrecognized expression")
 
+(* Function to evaluate expressions *)
+let rec eval_bool_expr bool_expr (state: state) : bool_val =
+  match bool_expr with
+  | True -> True
+  | False -> False
+  | Equal(e1, e2) ->
+    let (v1, state') = eval_expr e1 state in
+    let (v2, state'') = eval_expr e2 state' in
+    begin match (v1, v2) with
+      | (Val (Int n1), Val (Int n2)) -> if n1 = n2 then True else False
+      | (Val (Loc l1), Val (Loc l2)) -> if l1 = l2 then True else False
+      | _ -> Error
+    end
+  | Less(e1, e2) ->
+    let (v1, state') = eval_expr e1 state in
+    let (v2, state'') = eval_expr e2 state' in
+    begin match (v1, v2) with
+      | (Val (Int n1), Val (Int n2)) -> if n1 < n2 then True else False
+      | _ -> Error
+    end
+
+(* Function to evaluate command *)
 let rec eval_cmd cmd (state: state) : state =
   Printf.printf "\n\nEvaluating command: %s" (string_of_command cmd);
   Printf.printf "%s" (string_of_state state);
@@ -136,10 +263,74 @@ let rec eval_cmd cmd (state: state) : state =
       | Val v ->
         let loc = match state'.stack with
                   | Decl env :: _ -> List.assoc x env
+                  | Call (env, stack) :: _ -> List.assoc x env
                   | _ -> raise (RuntimeError "Variable not declared") in
         let heap' = update_heap state'.heap loc "val" value in
         { state' with heap = heap' }
       | Error -> raise (RuntimeError "Error during assignment")
+      end
+    | MallocCmd x ->
+      let obj_loc = new_location() in
+      begin match find_in_stack x state.stack with
+      | Some x_loc ->
+        let heap' = update_heap state.heap x_loc "val" (Val (Loc obj_loc)) in
+        
+        (* Initialize all fields collected in the program to Null *)
+        List.iter (fun field -> 
+          let heap' = update_heap heap' obj_loc field (Val Null) in
+          ()
+        ) !collected_fields;
+        { state with heap = heap' }
+      | None ->
+        Printf.printf "Variable '%s' not declared!\n" x;
+        raise (RuntimeError "Variable not declared")
+      end
+    | FieldAssignExpressionCmd (e1, e2, e3) -> 
+      let (loc_tv, state')  = eval_expr e1 state in
+      let (field_tv, state'') = eval_expr e2 state' in
+      begin match (loc_tv, field_tv) with 
+        | (Val (Loc loc), Val (Field field)) ->
+          let (value, state''') = eval_expr e3 state'' in
+          begin match Hashtbl.find_opt state'''.heap (loc, field) with
+            | Some _ ->
+              let heap' = update_heap state'''.heap loc field value in
+                { state with heap = heap' }
+            | None ->
+              raise (RuntimeError "Field not found")
+          end
+        | _ ->
+          raise (RuntimeError "Error during assignment")
+      end
+    | WhileCmd (cond, cmd) ->
+      begin match eval_bool_expr cond state with
+        | True  ->  let state' = eval_cmd cmd state in
+                      eval_cmd (WhileCmd(cond, cmd)) state'
+        | False -> state
+        | Error -> raise (RuntimeError "Error in while condition")
+      end
+    | IfThenElseCmd (bool_expr, cmd1, cmd2) ->
+      begin match eval_bool_expr bool_expr state with
+        | True  -> eval_cmd cmd1 state
+        | False -> eval_cmd cmd2 state
+        | Error -> raise (RuntimeError "Bool error occured in if else then")
+      end
+    | SkipCmd -> state
+    | CallCmd (e1, e2) ->
+      let (v, state') = eval_expr e1 state in
+      begin match (v) with
+        | Val( Clo( Closure (x, body, closure_stack))) ->
+          let loc = new_location () in
+          let env = [(x, loc)] in 
+          let stack' = Semantic_domain.Call (env, state.stack) :: closure_stack in
+          let (value, _) = eval_expr e2 state in
+          let heap' = update_heap state.heap loc "val" value in
+          eval_cmd (PopBlock(convert_cmd_to_control body)) { stack = stack'; heap = heap' }
+      end
+    | PopBlock cmd ->
+      let state' = eval_cmd cmd state in
+      begin match state'.stack with
+        | top_frame :: rest_stack -> { state' with stack = rest_stack }
+        | [] -> raise (RuntimeError "Stack underflow on PopBlock: Attempted to pop from an empty stack.")
       end
     | BlockCmd cmds -> eval_block cmds state
     | _ -> raise (RuntimeError "Unrecognized command")
@@ -157,8 +348,12 @@ and eval_block cmds state =
 
 (* Evaluate a program with an initial state *)
 let eval_prog prog =
+  reset_location_counter ();
+  reset_collected_fields ();
+  collect_fields_cmd prog;
+  print_collected_fields ();
   let initial_state = { stack = []; heap = Hashtbl.create 100 } in
-  let final_state = eval_block prog initial_state in
+  let final_state = eval_block (convert_cmds_to_control prog) initial_state in
   Printf.printf "\n\nFinal state after program execution: %s\n" (string_of_state final_state);
-  Printf.printf ("\n");
+  Printf.printf "\n";
   final_state

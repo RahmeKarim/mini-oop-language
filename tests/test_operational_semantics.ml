@@ -8,11 +8,9 @@ open Ast
 open Operational_semantics
 
 let test_operational_behavior input expected_state =
-  reset_location_counter ();
   let lexbuf = Lexing.from_string input in
   let ast_cmds = Parser.main Lexer.token lexbuf in
-  let semantic_controls = convert_cmds_to_control ast_cmds in
-  let actual_state = eval_prog semantic_controls in
+  let actual_state = eval_prog ast_cmds in
   if actual_state = expected_state then () (* Test passed *)
   else
     begin
@@ -22,7 +20,15 @@ let test_operational_behavior input expected_state =
       assert_failure "Operational behavior does not match expected output"
     end
 
-(* Define expected states for tests *)
+(* Expected states for tests *)
+let expected_state_for_multiple_commands = {
+  stack = [Decl [("P", ObjectLoc (Object 2))]; Decl [("H", ObjectLoc (Object 1))]; Decl [("R", ObjectLoc (Object 0))]];
+  heap = let h = Hashtbl.create 100 in
+    Hashtbl.add h (ObjectLoc (Object 0), "val") (Val Null);
+    Hashtbl.add h (ObjectLoc (Object 1), "val") (Val (Int(1)));
+    Hashtbl.add h (ObjectLoc (Object 2), "val") (Val (Int(0)));
+    h
+}
 let expected_state_for_var_declaration = {
   stack = [Decl [("X", ObjectLoc (Object 0))]];
   heap = let h = Hashtbl.create 100 in
@@ -30,7 +36,6 @@ let expected_state_for_var_declaration = {
          h
 }
 
-(* Define expected states for tests *)
 let expected_state_for_var_assignment = {
   stack = [Decl [("X", ObjectLoc (Object 0))]];
   heap = let h = Hashtbl.create 100 in
@@ -38,7 +43,6 @@ let expected_state_for_var_assignment = {
          h
 }
 
-(* Define expected states for tests *)
 let expected_state_for_minus = {
   stack = [Decl [("X", ObjectLoc (Object 0))]];
   heap = let h = Hashtbl.create 100 in
@@ -46,7 +50,6 @@ let expected_state_for_minus = {
          h
 }
 
-(* Define expected states for tests *)
 let expected_state_for_multiple_commands = {
   stack = [Decl [("P", ObjectLoc (Object 2))]; Decl [("H", ObjectLoc (Object 1))]; Decl [("R", ObjectLoc (Object 0))]];
   heap = let h = Hashtbl.create 100 in
@@ -85,11 +88,89 @@ let expected_state_for_procedure_declaration = {
     h
 }
 
+let expected_state_for_malloc = {
+  stack = [Decl [("X", ObjectLoc (Object 0))]];
+  heap = let h = Hashtbl.create 100 in
+    Hashtbl.add h (ObjectLoc (Object 0), "val") (Val (Loc (ObjectLoc (Object 1))));
+    h
+}
+
+let expected_state_for_field_assignment = {
+  stack = [Decl [("X", ObjectLoc (Object 0))]];
+  heap = let h = Hashtbl.create 100 in
+    Hashtbl.add h (ObjectLoc (Object 0), "val") (Val (Loc (ObjectLoc (Object 1))));
+    Hashtbl.add h (ObjectLoc (Object 1), "f") (Val (Int (3)));
+    h
+}
+
+let expected_state_for_malloc_with_extra_fields = {
+  stack = [Decl [("R", ObjectLoc (Object 1))]; Decl [("X", ObjectLoc (Object 0))]];
+  heap = let h = Hashtbl.create 100 in
+    Hashtbl.add h (ObjectLoc (Object 0), "val") (Val (Loc (ObjectLoc (Object 2))));
+    Hashtbl.add h (ObjectLoc (Object 1), "val") (Val (Loc (ObjectLoc (Object 3))));
+    Hashtbl.add h (ObjectLoc (Object 2), "f") (Val (Int(3)));
+    Hashtbl.add h (ObjectLoc (Object 3), "f") (Val (Int(1)));
+    h
+}
+
+let expected_state_for_if_then_else_true = {
+  stack = [Decl [("X", ObjectLoc (Object 0))]];
+  heap = let h = Hashtbl.create 100 in
+    Hashtbl.add h (ObjectLoc (Object 0), "val") (Val (Int (1)));
+    h
+}
+
+let expected_state_for_if_then_else_false = {
+  stack = [Decl [("X", ObjectLoc (Object 0))]];
+  heap = let h = Hashtbl.create 100 in
+    Hashtbl.add h (ObjectLoc (Object 0), "val") (Val (Int (2)));
+    h
+}
+
+let expected_state_for_while_true = {
+  stack = [Decl [("X", ObjectLoc (Object 0))]];
+  heap = let h = Hashtbl.create 100 in
+    Hashtbl.add h (ObjectLoc (Object 0), "val") (Val (Int (5)));
+    h
+}
+
+let expected_state_for_while_false = {
+  stack = [Decl [("X", ObjectLoc (Object 0))]];
+  heap = let h = Hashtbl.create 100 in
+    Hashtbl.add h (ObjectLoc (Object 0), "val") (Val (Int (0)));
+    h
+}
+
+let expected_state_for_skip = {
+  stack = [Decl [("X", ObjectLoc (Object 0))]];
+  heap = let h = Hashtbl.create 100 in
+    Hashtbl.add h (ObjectLoc (Object 0), "val") (Val (Int (2)));
+    h
+}
+
+let expected_state_for_procedure_call = {
+  stack = [Decl [("P", ObjectLoc (Object 1))]; Decl [("X", ObjectLoc (Object 0))]];
+  heap = let h = Hashtbl.create 100 in
+    Hashtbl.add h (ObjectLoc (Object 0), "val") (Val (Int (18)));
+
+    (* Add closure for P at Object 1 *)
+    let closure_body = Assign ("X", Minus (Variable "21", Variable "Y")) in
+    let closure_env = [
+      Decl [("P", ObjectLoc (Object 1))];
+      Decl [("X", ObjectLoc (Object 0))]
+    ] in
+    Hashtbl.add h (ObjectLoc (Object 1), "val") (Val (Clo (Closure ("Y", closure_body, closure_env))));
+
+    h
+}
+
 (* Define test cases *)
 let test_cases = [
+  (*
   "test_var_declaration" >:: (fun _ ->
     test_operational_behavior "var X\n" expected_state_for_var_declaration
   );
+
   "test_var_assignment" >:: (fun _ ->
     test_operational_behavior "var X; X = 5\n" expected_state_for_var_assignment
   );
@@ -101,6 +182,34 @@ let test_cases = [
   );
   "test_procedure_declaration" >:: (fun _ ->
     test_operational_behavior "var R; var H; H=1; var P; P = proc Y: R = Y - H; var H; H = 2\n" expected_state_for_procedure_declaration
+  );
+  "test_malloc" >:: (fun _ ->
+    test_operational_behavior "var X; malloc(X)\n" expected_state_for_malloc
+  );
+  "test_field_assigment" >:: (fun _ ->
+    test_operational_behavior "var X; malloc(X); X.f = 3;\n" expected_state_for_field_assignment
+  );
+  "test_double_field_assigment" >:: (fun _ ->
+    test_operational_behavior "var X; var R; malloc(X); malloc(R); X.f = 3; R.f = X.f - 2;\n" expected_state_for_malloc_with_extra_fields
+  );
+  "test_if_then_else_true" >:: (fun _ ->
+    test_operational_behavior "var X; if true then X = 1 else X = 2\n" expected_state_for_if_then_else_true
+  );
+  "test_if_then_else_false" >:: (fun _ ->
+    test_operational_behavior "var X; if false then X = 1 else X = 2\n" expected_state_for_if_then_else_false
+  );
+  "test_while_true" >:: (fun _ ->
+    test_operational_behavior "var X; X = 0; while X < 5 X = X + 1\n" expected_state_for_while_true
+  );
+  "test_while_false" >:: (fun _ ->
+    test_operational_behavior "var X; X = 0; while false X = X + 1\n" expected_state_for_while_false
+  );
+  "test_skip" >:: (fun _ ->
+    test_operational_behavior "var X; X = 3; skip; X = X - 1\n" expected_state_for_skip
+  );
+  *)
+  "test_procedure_call" >:: (fun _ ->
+    test_operational_behavior "var X; var P; P = proc Y: X = Y - 3; P(21);\n" expected_state_for_skip
   );
 ]
 

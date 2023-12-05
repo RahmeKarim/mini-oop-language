@@ -3,6 +3,7 @@ type expr =
   | Number of int
   | Null
   | Minus of expr * expr
+  | Plus of expr * expr
   | FieldValue of expr * expr
   | Variable of string
   | Proc of string * cmd

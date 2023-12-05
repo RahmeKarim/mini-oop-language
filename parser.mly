@@ -9,7 +9,7 @@
     Printf.eprintf "%s\n" msg;;
 %}
 
-%token EOL SEMICOLON COLON ASSIGN MINUS /* lexer tokens */
+%token EOL SEMICOLON COLON ASSIGN MINUS PLUS /* lexer tokens */
 %token VAR NULL PROC DOT EOF
 %token TRUE FALSE LESS EQUAL
 %token <string> VARIABLE
@@ -54,6 +54,7 @@ expr:
   f = FIELD                         { Field f }
   | n = NUMBER                      { Number n }
   | e1 = expr MINUS e2 = expr       { Minus (e1, e2) }
+  | e1 = expr PLUS e2 = expr        { Plus (e1, e2) }
   | NULL                            { Null }
   | v = VARIABLE                    { Variable v }
   | e1 = expr DOT e2 = expr         { FieldValue (e1, e2) }

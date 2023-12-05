@@ -28,6 +28,7 @@ rule token = parse
   | "while"    { WHILE }
   | "skip"     { SKIP }
   | '-'        { MINUS }
+  | '+'        { PLUS }
   | '('        { LPAREN }
   | ')'        { RPAREN }
   | '{'        { LBRACE }
