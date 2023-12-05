@@ -160,6 +160,47 @@ let expected_state_for_procedure_call = {
     h
 }
 
+let expected_state_for_simple_block = {
+  stack = [];
+  heap = let h = Hashtbl.create 100 in
+         Hashtbl.add h (ObjectLoc (Object 0), "val") (Val (Int(5)));
+         h
+}
+
+let expected_state_for_atom = {
+  stack = [];
+  heap = let h = Hashtbl.create 100 in
+         Hashtbl.add h (ObjectLoc (Object 0), "val") (Val (Int(0)));
+         h
+}
+
+let expected_state_for_block_procedure_call = {
+  stack = [];
+  heap = let h = Hashtbl.create 100 in
+    Hashtbl.add h (ObjectLoc (Object 0), "val") (Val (Int (8)));
+
+    (* Add closure for P at Object 1 *)
+    let closure_body = Block([
+      Assign ("Y", Plus (Variable "Y", Number 3));
+      Assign ("X", Minus (Variable "Y", Number 5))
+    ]) in
+    let closure_env = [
+      Decl [("P", ObjectLoc (Object 1))];
+      Decl [("X", ObjectLoc (Object 0))]
+    ] in
+    Hashtbl.add h (ObjectLoc (Object 1), "val") (Val (Clo (Closure ("Y", closure_body, closure_env))));
+    Hashtbl.add h (ObjectLoc (Object 2), "val") (Val (Int (13)));
+
+    h
+}
+
+let expected_state_for_parallelism = {
+  stack = [];
+  heap = let h = Hashtbl.create 100 in
+         Hashtbl.add h (ObjectLoc (Object 0), "val") (Val (Int(2)));
+         h
+}
+
 (* Define test cases *)
 let test_cases = [
   "test_var_declaration" >:: (fun _ ->
@@ -203,6 +244,18 @@ let test_cases = [
   );
   "test_procedure_call" >:: (fun _ ->
     test_operational_behavior "var X; var P; P = proc Y: X = Y - 3; P(21);\n" expected_state_for_procedure_call
+  );
+  "test_simple_block" >:: (fun _ ->
+    test_operational_behavior "{var X; X = 5;}\n" expected_state_for_simple_block
+  );
+  "test_block_procedure" >:: (fun _ ->
+    test_operational_behavior "var X; var P; P = proc Y: { Y = Y + 3; X = Y - 5;}; P(10);\n" expected_state_for_block_procedure_call
+  );
+  "test_parallelism" >:: (fun _ ->
+    test_operational_behavior "var X; {X = 4 ||| X = 2}\n" expected_state_for_parallelism
+  );
+  "test_atom_parallelism" >:: (fun _ ->
+    test_operational_behavior "var X; { {X = 0; atom({X = X + 1; X = X + 1})} ||| X = 0}\n" expected_state_for_atom
   );
 ]
 

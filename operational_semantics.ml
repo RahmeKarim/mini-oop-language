@@ -42,7 +42,9 @@ let rec string_of_command cmd =
   | IfThenElseCmd (cond, cmd1, cmd2) -> "IfThenElse (" ^ string_of_bool_expr cond ^ ", " ^ string_of_command cmd1 ^ ", " ^ string_of_command cmd2 ^ ")"
   | SkipCmd -> "Skip"
   | CallCmd (e1, e2) -> "Call (" ^ string_of_expr e1 ^ ", " ^ string_of_expr e2 ^ ")"
-  | PopBlock cmds -> "block [" ^ String.concat ", " (List.map string_of_command cmds) ^ "]"
+  | PopBlock cmds -> "PopBlock (" ^ String.concat ", " (List.map string_of_command cmds) ^ ")"
+  | ParallelCmd (cmd1, cmd2) -> "ParallelCmd (" ^ string_of_command cmd1 ^ " ||| " ^ string_of_command cmd2 ^ ")"
+  | AtomCmd cmd1 -> "atom (" ^ string_of_command cmd1 ^ ")"
   | _ -> raise (RuntimeError "Unimplemented")
 
 and string_of_bool_expr (bool_expr: Ast.bool_expr) : string =
@@ -349,6 +351,28 @@ and eval_cmd (cmd: Semantic_domain.control) (rest_cmds: Semantic_domain.control 
       end
 
   | SkipCmd -> state, rest_cmds
+
+  | BlockCmd cmds -> eval_cmds cmds state
+
+  | ParallelCmd (cmd1, cmd2) ->
+    if Random.bool() then
+      let state', remaining_cmds1 = eval_cmds [cmd1] state in
+      if remaining_cmds1 = [] then
+        let state'', _ = eval_cmds [cmd2] state' in
+        state'', rest_cmds
+      else
+        let new_parallel = ParallelCmd (BlockCmd remaining_cmds1, cmd2) in
+        state', new_parallel :: rest_cmds
+    else
+      let state', remaining_cmds2 = eval_cmds [cmd2] state in
+      if remaining_cmds2 = [] then
+        let state'', _ = eval_cmds [cmd1] state' in
+        state'', rest_cmds
+      else
+        let new_parallel = ParallelCmd (cmd1, BlockCmd remaining_cmds2) in
+        state', new_parallel :: rest_cmds
+
+  | AtomCmd cmd -> eval_cmds [cmd] state
 
   | CallCmd (e1, e2) ->
     let (v, state') = eval_expr e1 state in
