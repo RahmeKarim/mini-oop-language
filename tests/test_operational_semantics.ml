@@ -30,28 +30,28 @@ let expected_state_for_multiple_commands = {
     h
 }
 let expected_state_for_var_declaration = {
-  stack = [Decl [("X", ObjectLoc (Object 0))]];
+  stack = [];
   heap = let h = Hashtbl.create 100 in
          Hashtbl.add h (ObjectLoc (Object 0), "val") (Val Null);
          h
 }
 
 let expected_state_for_var_assignment = {
-  stack = [Decl [("X", ObjectLoc (Object 0))]];
+  stack = [];
   heap = let h = Hashtbl.create 100 in
          Hashtbl.add h (ObjectLoc (Object 0), "val") (Val (Int(5)));
          h
 }
 
 let expected_state_for_minus = {
-  stack = [Decl [("X", ObjectLoc (Object 0))]];
+  stack = [];
   heap = let h = Hashtbl.create 100 in
          Hashtbl.add h (ObjectLoc (Object 0), "val") (Val (Int(3)));
          h
 }
 
 let expected_state_for_multiple_commands = {
-  stack = [Decl [("P", ObjectLoc (Object 2))]; Decl [("H", ObjectLoc (Object 1))]; Decl [("R", ObjectLoc (Object 0))]];
+  stack = [];
   heap = let h = Hashtbl.create 100 in
     Hashtbl.add h (ObjectLoc (Object 0), "val") (Val Null);
     Hashtbl.add h (ObjectLoc (Object 1), "val") (Val (Int(1)));
@@ -60,12 +60,7 @@ let expected_state_for_multiple_commands = {
 }
 
 let expected_state_for_procedure_declaration = {
-  stack = [
-    Decl [("H", ObjectLoc (Object 3))];
-    Decl [("P", ObjectLoc (Object 2))];
-    Decl [("H", ObjectLoc (Object 1))];
-    Decl [("R", ObjectLoc (Object 0))]
-  ];
+  stack = [];
   heap = let h = Hashtbl.create 100 in
     (* Add entry for R at Object 0 *)
     Hashtbl.add h (ObjectLoc (Object 0), "val") (Val Null);
@@ -89,14 +84,14 @@ let expected_state_for_procedure_declaration = {
 }
 
 let expected_state_for_malloc = {
-  stack = [Decl [("X", ObjectLoc (Object 0))]];
+  stack = [];
   heap = let h = Hashtbl.create 100 in
     Hashtbl.add h (ObjectLoc (Object 0), "val") (Val (Loc (ObjectLoc (Object 1))));
     h
 }
 
 let expected_state_for_field_assignment = {
-  stack = [Decl [("X", ObjectLoc (Object 0))]];
+  stack = [];
   heap = let h = Hashtbl.create 100 in
     Hashtbl.add h (ObjectLoc (Object 0), "val") (Val (Loc (ObjectLoc (Object 1))));
     Hashtbl.add h (ObjectLoc (Object 1), "f") (Val (Int (3)));
@@ -104,7 +99,7 @@ let expected_state_for_field_assignment = {
 }
 
 let expected_state_for_malloc_with_extra_fields = {
-  stack = [Decl [("R", ObjectLoc (Object 1))]; Decl [("X", ObjectLoc (Object 0))]];
+  stack = [];
   heap = let h = Hashtbl.create 100 in
     Hashtbl.add h (ObjectLoc (Object 0), "val") (Val (Loc (ObjectLoc (Object 2))));
     Hashtbl.add h (ObjectLoc (Object 1), "val") (Val (Loc (ObjectLoc (Object 3))));
@@ -114,42 +109,42 @@ let expected_state_for_malloc_with_extra_fields = {
 }
 
 let expected_state_for_if_then_else_true = {
-  stack = [Decl [("X", ObjectLoc (Object 0))]];
+  stack = [];
   heap = let h = Hashtbl.create 100 in
     Hashtbl.add h (ObjectLoc (Object 0), "val") (Val (Int (1)));
     h
 }
 
 let expected_state_for_if_then_else_false = {
-  stack = [Decl [("X", ObjectLoc (Object 0))]];
+  stack = [];
   heap = let h = Hashtbl.create 100 in
     Hashtbl.add h (ObjectLoc (Object 0), "val") (Val (Int (2)));
     h
 }
 
 let expected_state_for_while_true = {
-  stack = [Decl [("X", ObjectLoc (Object 0))]];
+  stack = [];
   heap = let h = Hashtbl.create 100 in
     Hashtbl.add h (ObjectLoc (Object 0), "val") (Val (Int (5)));
     h
 }
 
 let expected_state_for_while_false = {
-  stack = [Decl [("X", ObjectLoc (Object 0))]];
+  stack = [];
   heap = let h = Hashtbl.create 100 in
     Hashtbl.add h (ObjectLoc (Object 0), "val") (Val (Int (0)));
     h
 }
 
 let expected_state_for_skip = {
-  stack = [Decl [("X", ObjectLoc (Object 0))]];
+  stack = [];
   heap = let h = Hashtbl.create 100 in
     Hashtbl.add h (ObjectLoc (Object 0), "val") (Val (Int (2)));
     h
 }
 
 let expected_state_for_procedure_call = {
-  stack = [Decl [("P", ObjectLoc (Object 1))]; Decl [("X", ObjectLoc (Object 0))]];
+  stack = [];
   heap = let h = Hashtbl.create 100 in
     Hashtbl.add h (ObjectLoc (Object 0), "val") (Val (Int (18)));
 
@@ -170,11 +165,9 @@ let test_cases = [
   "test_var_declaration" >:: (fun _ ->
     test_operational_behavior "var X\n" expected_state_for_var_declaration
   );
-
   "test_var_assignment" >:: (fun _ ->
     test_operational_behavior "var X; X = 5\n" expected_state_for_var_assignment
   );
-
   "test_minus" >:: (fun _ ->
     test_operational_behavior "var X; X = 10 - 7\n" expected_state_for_minus
   );

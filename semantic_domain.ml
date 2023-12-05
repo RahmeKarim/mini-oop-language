@@ -48,7 +48,7 @@ and control =
   | FieldAssignExpressionCmd of expr * expr * expr
   | ParallelCmd of control * control
   | AtomCmd of control
-  | PopBlock of control
+  | PopBlock of control list
   | CallCmd of expr * expr
 
 and configuration =
