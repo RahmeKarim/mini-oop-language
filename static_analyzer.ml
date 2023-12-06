@@ -27,8 +27,7 @@ let rec analyze_expr expr scope =
 
 and analyze_bool_expr bool_expr scope =
   match bool_expr with
-  | True | False ->
-    { scope with e = false }  (* Boolean literals do not generate undeclared variable errors *)
+  | True | False -> { scope with e = false }  (* Boolean literals do not generate undeclared variable errors *)
   | Equal (e1, e2) | Less (e1, e2) ->
     let scope1 = analyze_expr e1 scope in
     let scope2 = analyze_expr e2 { scope with v = scope1.v } in
@@ -54,13 +53,13 @@ and analyze_cmd cmd scope =
   | While (b, c1) ->
     let bool_scope = analyze_bool_expr b scope in
     let cmd_scope = analyze_cmd c1 scope in
-    { scope with e = bool_scope.e || cmd_scope.e }
+    { scope with u = bool_scope.u @ cmd_scope.u; e = bool_scope.e || cmd_scope.e }
   
   | IfThenElse (b, c1, c2) ->
     let bool_scope = analyze_bool_expr b scope in
     let scope1 = analyze_cmd c1 scope in
     let scope2 = analyze_cmd c2 scope in
-    { scope with e = bool_scope.e || scope1.e || scope2.e }
+    { scope with u = bool_scope.u @ scope1.u @ scope2.u; e = bool_scope.e || scope1.e || scope2.e }
   
   | Parallel (c1, c2) -> 
     let scope1 = analyze_cmd c1 scope in
@@ -69,24 +68,23 @@ and analyze_cmd cmd scope =
     let merged_u = List.fold_left (fun acc x -> if List.mem x acc then acc else x :: acc) scope.u (List.append scope1.u scope2.u) in
     { e = scope1.e || scope2.e; v = merged_v; u = merged_u }
 
-  | Atom c1 ->  (* Handle atomic commands *)
+  | Atom c1 ->
     let cmd_scope = analyze_cmd c1 scope in
-    { scope with e = cmd_scope.e }
+    { scope with u = cmd_scope.u; e = cmd_scope.e }
 
   | Call (e1, e2) ->
-    (* Analyze the function and arguments *)
     let func_scope = analyze_expr e1 scope in
     let arg_scope = analyze_expr e2 scope in
-    (* The error flag should be true if either function or argument has an error *)
-    { scope with e = func_scope.e || arg_scope.e }
+    { scope with u = func_scope.u @ arg_scope.u; e = func_scope.e || arg_scope.e }
   
-  | Malloc x -> { scope with e = not (List.mem x scope.v) }
+  | Malloc x -> 
+    { scope with u = x :: scope.u; e = not (List.mem x scope.v) }
 
   | FieldAssignExpression (e1, e2, e3) ->
     let scope1 = analyze_expr e1 scope in
     let scope2 = analyze_expr e2 scope in
     let scope3 = analyze_expr e3 scope in
-    { scope with e = scope1.e || scope2.e || scope3.e }
+    { scope with u = scope1.u @ scope2.u @ scope3.u; e = scope1.e || scope2.e || scope3.e }
 
 and analyze_cmds cmds scope print_scope =
   match cmds with

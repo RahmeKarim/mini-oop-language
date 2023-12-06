@@ -25,7 +25,7 @@ LEXER_GEN=lexer.ml
 PARSER_GEN=parser.ml
 PARSER_GEN_INTF=parser.mli
 
-# Define the executable name
+# Define the executable names
 EXEC=mini_oop
 TEST_LEXER=test_lexer.native
 TEST_PARSER=test_parser.native

@@ -62,13 +62,10 @@ let expected_state_for_multiple_commands = {
 let expected_state_for_procedure_declaration = {
   stack = [];
   heap = let h = Hashtbl.create 100 in
-    (* Add entry for R at Object 0 *)
     Hashtbl.add h (ObjectLoc (Object 0), "val") (Val Null);
 
-    (* Add entry for H at Object 1 with value 1 *)
     Hashtbl.add h (ObjectLoc (Object 1), "val") (Val (Int 1));
 
-    (* Add closure for P at Object 2 *)
     let closure_body = Assign ("R", Minus (Variable "Y", Variable "H")) in
     let closure_env = [
       Decl [("P", ObjectLoc (Object 2))];
@@ -77,7 +74,6 @@ let expected_state_for_procedure_declaration = {
     ] in
     Hashtbl.add h (ObjectLoc (Object 2), "val") (Val (Clo (Closure ("Y", closure_body, closure_env))));
 
-    (* Add entry for H at Object 3 with value 2 *)
     Hashtbl.add h (ObjectLoc (Object 3), "val") (Val (Int 2));
 
     h
@@ -148,7 +144,6 @@ let expected_state_for_procedure_call = {
   heap = let h = Hashtbl.create 100 in
     Hashtbl.add h (ObjectLoc (Object 0), "val") (Val (Int (18)));
 
-    (* Add closure for P at Object 1 *)
     let closure_body = Assign ("X", Minus (Variable "Y", Number 3)) in
     let closure_env = [
       Decl [("P", ObjectLoc (Object 1))];
@@ -179,7 +174,6 @@ let expected_state_for_block_procedure_call = {
   heap = let h = Hashtbl.create 100 in
     Hashtbl.add h (ObjectLoc (Object 0), "val") (Val (Int (8)));
 
-    (* Add closure for P at Object 1 *)
     let closure_body = Block([
       Assign ("Y", Plus (Variable "Y", Number 3));
       Assign ("X", Minus (Variable "Y", Number 5))
