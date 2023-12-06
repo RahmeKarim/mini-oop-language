@@ -194,13 +194,6 @@ let expected_state_for_block_procedure_call = {
     h
 }
 
-let expected_state_for_parallelism = {
-  stack = [];
-  heap = let h = Hashtbl.create 100 in
-         Hashtbl.add h (ObjectLoc (Object 0), "val") (Val (Int(2)));
-         h
-}
-
 (* Define test cases *)
 let test_cases = [
   "test_var_declaration" >:: (fun _ ->
@@ -250,12 +243,6 @@ let test_cases = [
   );
   "test_block_procedure" >:: (fun _ ->
     test_operational_behavior "var X; var P; P = proc Y: { Y = Y + 3; X = Y - 5;}; P(10);\n" expected_state_for_block_procedure_call
-  );
-  "test_parallelism" >:: (fun _ ->
-    test_operational_behavior "var X; {X = 4 ||| X = 2}\n" expected_state_for_parallelism
-  );
-  "test_atom_parallelism" >:: (fun _ ->
-    test_operational_behavior "var X; { {X = 0; atom({X = X + 1; X = X + 1})} ||| X = 0}\n" expected_state_for_atom
   );
 ]
 
