@@ -70,8 +70,8 @@ $(LEXER_GEN): $(LEXER_SRC) $(PARSER_GEN_INTF)
 	$(OCAMLC) -c $(LEXER_GEN)
 
 # Rule to make the executable, depends on all generated and source files
-$(EXEC): $(LEXER_GEN) $(PARSER_GEN) $(AST_SRC:.ml=.cmo) $(PRETTY_PRINTER_SRC:.ml=.cmo) $(STATIC_ANALYZER_SRC:.ml=.cmo) $(MAIN_SRC)
-	$(OCAMLC) -o $(EXEC) $(PARSER_GEN_INTF) $(PARSER_GEN) $(LEXER_GEN) $(AST_SRC:.ml=.cmo) $(PRETTY_PRINTER_SRC:.ml=.cmo) $(STATIC_ANALYZER_SRC:.ml=.cmo) $(MAIN_SRC)
+$(EXEC): $(LEXER_GEN) $(PARSER_GEN) $(AST_SRC:.ml=.cmo) $(PRETTY_PRINTER_SRC:.ml=.cmo) $(STATIC_ANALYZER_SRC:.ml=.cmo) $(SEMANTIC_DOMAIN_SRC:.ml=.cmo) $(OPERATIONAL_SEMANTICS_SRC:.ml=.cmo) $(MAIN_SRC)
+	$(OCAMLC) -o $(EXEC) $(PARSER_GEN_INTF) $(PARSER_GEN) $(LEXER_GEN) $(AST_SRC:.ml=.cmo) $(PRETTY_PRINTER_SRC:.ml=.cmo) $(STATIC_ANALYZER_SRC:.ml=.cmo) $(SEMANTIC_DOMAIN_SRC:.ml=.cmo) $(OPERATIONAL_SEMANTICS_SRC:.ml=.cmo) $(MAIN_SRC)
 
 # Additional target for verbose Menhir
 verbose: $(PARSER_SRC)

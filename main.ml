@@ -2,7 +2,8 @@
 open Ast
 open Parser
 open Pretty_printer
-open Parsing
+open Static_analyzer
+open Operational_semantics
 
 (* Function to print the position of an error *)
 let print_error_position lexbuf =
@@ -14,11 +15,32 @@ try
   while true do
     try
       (* Parse input to produce AST *)
-      let parsed_ast = Parser.main Lexer.token lexbuf in
-
-      (* Print the parsed AST *)
-      Printf.printf "Parsed AST:\n%s\n" (string_of_ast parsed_ast);
-      print_newline ();
+      let ast = Parser.main Lexer.token lexbuf in
+      begin
+        Printf.printf "\nParsed AST:\n%s\n" (string_of_ast ast);
+        print_newline ();
+    
+        let final_scope = run_analysis ast ~print_scope:true in
+        begin
+          report_unused_variables final_scope;
+          print_newline ();
+        end;
+    
+        if final_scope.e then begin
+          Printf.printf "Error: Use of undeclared variable\n";
+          print_newline ();
+        end
+        else begin
+          if final_scope.e then begin
+            Printf.printf "Error: Use of undeclared variable\n";
+            print_newline ();
+          end
+          else begin
+            let _ = eval_prog ast in
+            print_newline ();
+          end;
+        end;
+      end
 
     with
     | Parser.Error ->

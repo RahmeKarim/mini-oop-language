@@ -110,13 +110,10 @@ let collected_fields = ref []
 let rec collect_fields_expr expr =
   match expr with
   | Field f -> collected_fields := f :: !collected_fields
-  | FieldValue (e, Field f) -> 
+  | FieldValue (e, Field f) ->
     collected_fields := f :: !collected_fields;
     collect_fields_expr e
-  | Minus (e1, e2) | FieldValue (e1, e2) ->
-    collect_fields_expr e1;
-    collect_fields_expr e2
-  | Plus (e1, e2) | FieldValue (e1, e2) ->
+  | Minus (e1, e2) | Plus (e1, e2) ->
     collect_fields_expr e1;
     collect_fields_expr e2
   | Null | Number _ | Variable _ -> ()
@@ -130,14 +127,38 @@ and collect_fields_cmd cmds =
     begin
       match cmd with
       | Assign (_, e) -> collect_fields_expr e
+      | Malloc _ -> ()
       | FieldAssignExpression (e1, Field f, e3) -> 
         collected_fields := f :: !collected_fields;
         collect_fields_expr e1;
         collect_fields_expr e3;
-      | Block nested_cmds -> collect_fields_cmd nested_cmds
-      | _ -> ()
+      | Block cmds -> collect_fields_cmd cmds
+      | Atom cmd  -> collect_fields_cmd [cmd]
+      | While (b, c) ->
+        collect_fields_bool_expr b;
+        collect_fields_cmd [c]
+      | IfThenElse (b, c1, c2) ->
+        collect_fields_bool_expr b;
+        collect_fields_cmd [c1];
+        collect_fields_cmd [c2]
+      | Parallel (c1, c2) ->
+        collect_fields_cmd [c1];
+        collect_fields_cmd [c2]
+      | Var _ -> ()
+      | Skip -> ()
+      | Call (e1, e2) ->
+        collect_fields_expr e1;
+        collect_fields_expr e2
     end;
     collect_fields_cmd restCmds
+
+and collect_fields_bool_expr bool_expr =
+  match bool_expr with
+  | True | False -> ()
+  | Equal (e1, e2) | Less (e1, e2) ->
+    collect_fields_expr e1;
+    collect_fields_expr e2
+
     
 let reset_collected_fields () =
   collected_fields := []
@@ -215,7 +236,7 @@ let rec eval_expr expr (state: state) : tainted_value * state =
     begin
       match (v1, v2) with
       | (Val (Int n1), Val (Int n2)) -> (Val (Int (n1 + n2)), state2)
-      | _ -> raise (RuntimeError "Illegal subtraction")
+      | _ -> raise (RuntimeError "Illegal addition")
     end
   | FieldValue (e1, e2) ->
     let (loc_tv, state') = eval_expr e1 state in
