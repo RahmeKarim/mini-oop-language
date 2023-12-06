@@ -103,15 +103,18 @@ and string_of_state state =
   "\nStack: " ^ string_of_stack state.stack ^ "\n" ^
   "Heap: " ^ string_of_heap state.heap
   
-(* Actual Operational Semantics *)
+(* Util to collect all fields in AST for malloc *)
 
 let collected_fields = ref []
 
 let rec collect_fields_expr expr =
   match expr with
-  | Field f -> collected_fields := f :: !collected_fields
+  | Field f -> 
+    if not (List.mem f !collected_fields) then
+      collected_fields := f :: !collected_fields
   | FieldValue (e, Field f) ->
-    collected_fields := f :: !collected_fields;
+    if not (List.mem f !collected_fields) then
+      collected_fields := f :: !collected_fields;
     collect_fields_expr e
   | Minus (e1, e2) | Plus (e1, e2) ->
     collect_fields_expr e1;
@@ -119,7 +122,9 @@ let rec collect_fields_expr expr =
   | Null | Number _ | Variable _ -> ()
   | Proc (_, body) -> 
     collect_fields_cmd [body]
-
+  | FieldValue (e1, _) ->
+    collect_fields_expr e1
+  
 and collect_fields_cmd cmds =
   match cmds with
   | [] -> ()
@@ -128,12 +133,12 @@ and collect_fields_cmd cmds =
       match cmd with
       | Assign (_, e) -> collect_fields_expr e
       | Malloc _ -> ()
-      | FieldAssignExpression (e1, Field f, e3) -> 
-        collected_fields := f :: !collected_fields;
+      | FieldAssignExpression (e1, e2, e3) -> 
         collect_fields_expr e1;
+        collect_fields_expr e2;
         collect_fields_expr e3;
       | Block cmds -> collect_fields_cmd cmds
-      | Atom cmd  -> collect_fields_cmd [cmd]
+      | Atom cmd -> collect_fields_cmd [cmd]
       | While (b, c) ->
         collect_fields_bool_expr b;
         collect_fields_cmd [c]
@@ -152,6 +157,7 @@ and collect_fields_cmd cmds =
     end;
     collect_fields_cmd restCmds
 
+
 and collect_fields_bool_expr bool_expr =
   match bool_expr with
   | True | False -> ()
@@ -164,8 +170,10 @@ let reset_collected_fields () =
   collected_fields := []
 
 let print_collected_fields () =
-  Printf.printf "Collected fields:\n";
-  List.iter (fun field -> Printf.printf "%s\n" field) !collected_fields
+  Printf.printf "Collected fields: [%s]\n" (String.concat ", " !collected_fields)  
+
+
+(* Actual Operational Semantics *)
 
 (* Helper function to generate a unique location for the heap *)
 let location_counter = ref 0
@@ -248,8 +256,8 @@ let rec eval_expr expr (state: state) : tainted_value * state =
           | Some value -> (value, state'')
           | None -> (Error, state'')
         end
+      | _ -> raise (RuntimeError "Illegal field value")
       end
-  | _ -> raise (RuntimeError "Unrecognized expression")
 
 (* Function to evaluate expressions *)
 let rec eval_bool_expr bool_expr (state: state) : bool_val =
@@ -337,22 +345,22 @@ and eval_cmd (cmd: Semantic_domain.control) (rest_cmds: Semantic_domain.control 
       end
 
   | FieldAssignExpressionCmd (e1, e2, e3) -> 
-      let (loc_tv, state')  = eval_expr e1 state in
-      let (field_tv, state'') = eval_expr e2 state' in
-      begin match (loc_tv, field_tv) with 
+    let (loc_tv, state')  = eval_expr e1 state in
+    let (field_tv, state'') = eval_expr e2 state' in
+    begin match (loc_tv, field_tv) with 
       | (Val (Loc loc), Val (Field field)) ->
-          let (value, state''') = eval_expr e3 state'' in
-          begin match Hashtbl.find_opt state'''.heap (loc, field) with
-          | Some _ ->
-              let heap' = update_heap state'''.heap loc field value in
-              { state with heap = heap' }, rest_cmds
-          | None ->
-              raise (RuntimeError "Field not found")
-          end
-      | _ ->
-          raise (RuntimeError "Error during assignment")
-      end
-
+        let (value, state''') = eval_expr e3 state'' in
+        begin match value with
+        | Val _ ->
+            let heap' = update_heap state'''.heap loc field value in
+            { state with heap = heap' }, rest_cmds
+        | Error ->
+            raise (RuntimeError "Error during field assignment")
+        end
+    | _ ->
+        raise (RuntimeError "Invalid types in field assignment")
+    end
+    
   | WhileCmd (cond, cmd) ->
     begin match eval_bool_expr cond state with
     | True ->

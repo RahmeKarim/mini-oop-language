@@ -24,7 +24,6 @@ let rec analyze_expr expr scope =
     (* Analyze the body of the procedure with 'y' added to the scope *)
     let proc_scope = analyze_cmd c { scope with v = y :: scope.v } in
     { scope with e = proc_scope.e }
-  | _ -> raise Error("Undefined Match")
 
 and analyze_bool_expr bool_expr scope =
   match bool_expr with

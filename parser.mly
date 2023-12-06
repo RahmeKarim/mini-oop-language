@@ -9,7 +9,7 @@
     Printf.eprintf "%s\n" msg;;
 %}
 
-%token EOL SEMICOLON COLON ASSIGN MINUS PLUS /* lexer tokens */
+%token EOL SEMICOLON COLON ASSIGN MINUS PLUS EOF /* lexer tokens */
 %token VAR NULL PROC DOT
 %token TRUE FALSE LESS EQUAL
 %token <string> VARIABLE

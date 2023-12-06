@@ -31,7 +31,7 @@ let string_of_token = function
   | PARALLEL -> "PARALLEL"
   | ATOM -> "ATOM"
   | EOF -> "EOF"
-
+  
 let print_position lexbuf =
   let pos = lexbuf.lex_curr_p in
   Printf.sprintf "%d:%d" pos.pos_lnum (pos.pos_cnum - pos.pos_bol + 1)

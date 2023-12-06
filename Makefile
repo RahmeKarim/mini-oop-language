@@ -102,10 +102,13 @@ test_operational_semantics: $(PRETTY_PRINTER_SRC:.ml=.cmo) $(STATIC_ANALYZER_SRC
 	$(OCAMLFIND) ocamlc -o $(TEST_OPERATIONAL_SEMANTICS) -package ounit2 -linkpkg $(PRETTY_PRINTER_SRC:.ml=.cmo) $(STATIC_ANALYZER_SRC:.ml=.cmo) $(SEMANTIC_DOMAIN_SRC:.ml=.cmo) $(OPERATIONAL_SEMANTICS_SRC:.ml=.cmo) $(AST_SRC:.ml=.cmo) $(LEXER_GEN:.mll=.cmo) $(PARSER_GEN:.mly=.cmo) $(TEST_OPERATIONAL_SEMANTICS_SRC)
 	./$(TEST_OPERATIONAL_SEMANTICS)
 
+# Run all tests
+test: test_lexer test_parser test_pretty_printer test_static_analyzer test_operational_semantics
+
 # Run executable
 run: $(EXEC)
 	./$(EXEC)
 
-# Clean the build directory
+# Clean the build directory and oUnit test artifacts
 clean:
-	rm -f  ./tests/*.cmi ./tests/*.cmo *.cmi *.cmo $(LEXER_GEN) $(PARSER_GEN) $(PARSER_GEN_INTF) $(EXEC) $(TEST_LEXER) $(TEST_PARSER) $(TEST_PRETTY_PRINTER) $(TEST_STATIC_ANALYZER) $(TEST_OPERATIONAL_SEMANTICS)
+	rm -f  ./tests/*.cmi ./tests/*.cmo *.cmi *.cmo oUnit-Test* parser.conflicts $(LEXER_GEN) $(PARSER_GEN) $(PARSER_GEN_INTF) $(EXEC) $(TEST_LEXER) $(TEST_PARSER) $(TEST_PRETTY_PRINTER) $(TEST_STATIC_ANALYZER) $(TEST_OPERATIONAL_SEMANTICS)

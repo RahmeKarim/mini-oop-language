@@ -20,9 +20,9 @@ try
         Printf.printf "\nParsed AST:\n%s\n" (string_of_ast ast);
         print_newline ();
     
+        (* Check static semantics *)
         let final_scope = run_analysis ast ~print_scope:true in
         begin
-          report_unused_variables final_scope;
           print_newline ();
         end;
     
@@ -31,14 +31,9 @@ try
           print_newline ();
         end
         else begin
-          if final_scope.e then begin
-            Printf.printf "Error: Use of undeclared variable\n";
-            print_newline ();
-          end
-          else begin
-            let _ = eval_prog ast in
-            print_newline ();
-          end;
+          (* Check operational semantics *)
+          let _ = eval_prog ast in
+          print_newline ();
         end;
       end
 
@@ -48,6 +43,7 @@ try
       Printf.eprintf "Syntax error: unexpected token '%s'\n" (Lexing.lexeme lexbuf);
       print_newline ();
       exit 1
+      
     | Failure msg ->
       print_error_position lexbuf;
       Printf.eprintf "Failure: %s\n" msg;
